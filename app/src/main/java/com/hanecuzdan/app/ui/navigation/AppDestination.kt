@@ -2,6 +2,7 @@ package com.hanecuzdan.app.ui.navigation
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Category
@@ -22,6 +23,7 @@ enum class AppDestination(
 ) {
     // 1. Genel Bakış & Harcama Takibi
     DASHBOARD("Ana Sayfa", Icons.Default.Dashboard),
+    SMART_INSIGHTS("Akıllı Danışman", Icons.Default.AutoAwesome),
     MONTHLY_EXPENSES("Aylık Harcama", Icons.Default.ReceiptLong),
     UPCOMING_PAYMENTS("Gelecek Ödemeler", Icons.Default.EventAvailable),
 

@@ -52,6 +52,7 @@ import com.hanecuzdan.app.ui.screens.ReceiptArchiveScreen
 import com.hanecuzdan.app.ui.screens.SavingsGoalsScreen
 import com.hanecuzdan.app.ui.screens.ScopeTransactionsScreen
 import com.hanecuzdan.app.ui.screens.SettingsScreen
+import com.hanecuzdan.app.ui.screens.SmartInsightsScreen
 import com.hanecuzdan.app.ui.screens.SubscriptionsScreen
 import com.hanecuzdan.app.ui.screens.UpcomingPaymentsScreen
 import kotlinx.coroutines.flow.map
@@ -266,6 +267,11 @@ private fun MainScaffold(
                     )
                     AppDestination.MONTHLY_EXPENSES -> MonthlyExpensesScreen(
                         allTransactions = state.transactions,
+                        subscriptions = subscriptions
+                    )
+                    AppDestination.SMART_INSIGHTS -> SmartInsightsScreen(
+                        transactions = state.transactions,
+                        monthlyBudgetPool = state.metrics.totalBudgetPool,
                         subscriptions = subscriptions
                     )
                     AppDestination.SUBSCRIPTIONS -> SubscriptionsScreen(
