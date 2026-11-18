@@ -20,9 +20,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.hanecuzdan.app.domain.model.Loan
 import com.hanecuzdan.app.domain.model.Subscription
 import com.hanecuzdan.app.domain.model.Transaction
 import com.hanecuzdan.app.domain.model.TransactionType
+import com.hanecuzdan.app.domain.usecase.LoanCalculator
 import com.hanecuzdan.app.ui.theme.ExpenseRed
 import com.hanecuzdan.app.ui.util.formatTurkishCurrency
 import java.text.SimpleDateFormat
@@ -34,7 +36,8 @@ import java.util.Locale
 @Composable
 fun MonthlyExpensesScreen(
     allTransactions: List<Transaction>,
-    subscriptions: List<Subscription>
+    subscriptions: List<Subscription>,
+    loans: List<Loan> = emptyList()
 ) {
     val now = remember { System.currentTimeMillis() }
     val monthStart = remember(now) {
@@ -55,18 +58,27 @@ fun MonthlyExpensesScreen(
     val dueSubs = remember(subscriptions, todayDay) {
         subscriptions.filter { it.isActive && it.billingDay <= todayDay }
     }
-
-    val totalAmount = remember(monthlyTxs, dueSubs) {
-        monthlyTxs.sumOf { it.amount } + dueSubs.sumOf { it.monthlyEquivalent() }
+    val dueLoans = remember(loans, todayDay, now) {
+        loans.map { LoanCalculator.summarize(it, now) }
+            .filter { it.isActive && it.loan.paymentDay <= todayDay }
     }
 
-    val categoryTotals = remember(monthlyTxs, dueSubs) {
+    val totalAmount = remember(monthlyTxs, dueSubs, dueLoans) {
+        monthlyTxs.sumOf { it.amount } +
+            dueSubs.sumOf { it.monthlyEquivalent() } +
+            dueLoans.sumOf { it.monthlyInstallment }
+    }
+
+    val categoryTotals = remember(monthlyTxs, dueSubs, dueLoans) {
         val map = mutableMapOf<String, Double>()
         monthlyTxs.forEach { tx ->
             map[tx.categoryName] = (map[tx.categoryName] ?: 0.0) + tx.amount
         }
         dueSubs.forEach { sub ->
             map[sub.categoryName] = (map[sub.categoryName] ?: 0.0) + sub.monthlyEquivalent()
+        }
+        dueLoans.forEach { summary ->
+            map["Banka Kredi"] = (map["Banka Kredi"] ?: 0.0) + summary.monthlyInstallment
         }
         map.entries.sortedByDescending { it.value }
     }
@@ -98,7 +110,7 @@ fun MonthlyExpensesScreen(
                         color = ExpenseRed
                     )
                     Text(
-                        text = "${monthlyTxs.size} işlem + ${dueSubs.size} günü gelmiş abonelik",
+                        text = "${monthlyTxs.size} işlem + ${dueSubs.size} abonelik + ${dueLoans.size} kredi taksiti",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

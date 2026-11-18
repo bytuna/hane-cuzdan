@@ -2,6 +2,7 @@ package com.hanecuzdan.app.domain.usecase
 
 import com.hanecuzdan.app.domain.model.Budget
 import com.hanecuzdan.app.domain.model.BudgetPeriod
+import com.hanecuzdan.app.domain.model.Loan
 import com.hanecuzdan.app.domain.model.Subscription
 import com.hanecuzdan.app.domain.model.TimePeriod
 import com.hanecuzdan.app.domain.model.Transaction
@@ -53,7 +54,8 @@ class DashboardMetricsCalculator {
         budgets: List<Budget>,
         selectedPeriod: TimePeriod,
         nowMillis: Long = System.currentTimeMillis(),
-        subscriptions: List<Subscription> = emptyList()
+        subscriptions: List<Subscription> = emptyList(),
+        loans: List<Loan> = emptyList()
     ): DashboardMetrics {
         val totalIncome = allTransactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
         val totalExpense = allTransactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
@@ -85,9 +87,16 @@ class DashboardMetricsCalculator {
         val dueSubsExpense = activeSubs.filter { it.billingDay <= todayDayOfMonth }.sumOf { it.monthlyEquivalent() }
         // Ödeme günü bugünden ileride olan abonelikler Gelecek Ödemeler modülünde görünür
         val upcomingSubs = activeSubs.filter { it.billingDay > todayDayOfMonth }
-        val upcomingTotal = upcomingSubs.sumOf { it.monthlyEquivalent() }
 
-        val monthlyTotalExpense = monthlyTxExpense + dueSubsExpense
+        // Aktif krediler (geçmiş başlangıçlı krediler dahil)
+        val activeLoanSummaries = loans.map { LoanCalculator.summarize(it, nowMillis) }.filter { it.isActive }
+        val dueLoansExpense = activeLoanSummaries.filter { it.loan.paymentDay <= todayDayOfMonth }.sumOf { it.monthlyInstallment }
+        val upcomingLoans = activeLoanSummaries.filter { it.loan.paymentDay > todayDayOfMonth }
+
+        val dueRecurringTotal = dueSubsExpense + dueLoansExpense
+        val upcomingTotal = upcomingSubs.sumOf { it.monthlyEquivalent() } + upcomingLoans.sumOf { it.monthlyInstallment }
+
+        val monthlyTotalExpense = monthlyTxExpense + dueRecurringTotal
 
         val monthlyBudgetLimit = budgets
             .firstOrNull { it.categoryId == null && it.period == BudgetPeriod.MONTHLY }
@@ -96,7 +105,7 @@ class DashboardMetricsCalculator {
 
         val periodTxs = filterByPeriod(allTransactions, selectedPeriod, nowMillis)
         val periodIncome = periodTxs.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
-        val periodExpense = periodTxs.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount } + dueSubsExpense
+        val periodExpense = periodTxs.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount } + dueRecurringTotal
 
         // Bütçe + Dönem Geliri birleşimi; bütçe girilmişse bütçe havuzu eşitlenir/yansıtılır
         val totalBudgetPool = monthlyBudgetLimit + periodIncome
@@ -117,7 +126,7 @@ class DashboardMetricsCalculator {
             todayExpense = todayExpense,
             monthlyTotalExpense = monthlyTotalExpense,
             upcomingPaymentsTotal = upcomingTotal,
-            upcomingPaymentsCount = upcomingSubs.size,
+            upcomingPaymentsCount = upcomingSubs.size + upcomingLoans.size,
             periodIncome = periodIncome,
             periodExpense = periodExpense,
             categorySlices = slices

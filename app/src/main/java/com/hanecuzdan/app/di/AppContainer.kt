@@ -28,6 +28,7 @@ class AppContainer(context: Context) {
     val gitHubBackupEngine = GitHubBackupEngine()
     val subscriptionDao = database.subscriptionDao()
     val savingsGoalDao = database.savingsGoalDao()
+    val loanDao = database.loanDao()
 
     val transactionRepository: TransactionRepository = TransactionRepositoryImpl(
         transactionDao = database.transactionDao(),

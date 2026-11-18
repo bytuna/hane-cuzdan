@@ -6,12 +6,14 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.hanecuzdan.app.data.local.dao.BudgetDao
 import com.hanecuzdan.app.data.local.dao.CategoryDao
+import com.hanecuzdan.app.data.local.dao.LoanDao
 import com.hanecuzdan.app.data.local.dao.SavingsGoalDao
 import com.hanecuzdan.app.data.local.dao.SubscriptionDao
 import com.hanecuzdan.app.data.local.dao.SyncQueueDao
 import com.hanecuzdan.app.data.local.dao.TransactionDao
 import com.hanecuzdan.app.data.local.entity.BudgetEntity
 import com.hanecuzdan.app.data.local.entity.CategoryEntity
+import com.hanecuzdan.app.data.local.entity.LoanEntity
 import com.hanecuzdan.app.data.local.entity.SavingsGoalEntity
 import com.hanecuzdan.app.data.local.entity.SubscriptionEntity
 import com.hanecuzdan.app.data.local.entity.SyncQueueEntity
@@ -24,9 +26,10 @@ import com.hanecuzdan.app.data.local.entity.TransactionEntity
         BudgetEntity::class,
         SyncQueueEntity::class,
         SubscriptionEntity::class,
-        SavingsGoalEntity::class
+        SavingsGoalEntity::class,
+        LoanEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class HaneCuzdanDatabase : RoomDatabase() {
@@ -36,6 +39,7 @@ abstract class HaneCuzdanDatabase : RoomDatabase() {
     abstract fun syncQueueDao(): SyncQueueDao
     abstract fun subscriptionDao(): SubscriptionDao
     abstract fun savingsGoalDao(): SavingsGoalDao
+    abstract fun loanDao(): LoanDao
 
     companion object {
         @Volatile

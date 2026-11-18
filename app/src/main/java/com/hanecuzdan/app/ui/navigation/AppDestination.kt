@@ -1,6 +1,7 @@
 package com.hanecuzdan.app.ui.navigation
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Autorenew
@@ -34,6 +35,7 @@ enum class AppDestination(
 
     // 3. Planlama & Arşiv
     BUDGET_LIMITS("Bütçe Limitleri", Icons.Default.Speed),
+    LOANS("Krediler & Taksitler", Icons.Default.AccountBalance),
     SUBSCRIPTIONS("Abonelikler", Icons.Default.Autorenew),
     SAVINGS_GOALS("Hedefler", Icons.Default.Savings),
     CATEGORIES("Kategoriler", Icons.Default.Category),

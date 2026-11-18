@@ -24,7 +24,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.hanecuzdan.app.domain.model.Loan
 import com.hanecuzdan.app.domain.model.Subscription
+import com.hanecuzdan.app.domain.usecase.LoanCalculator
 import com.hanecuzdan.app.ui.theme.WarningAmber
 import com.hanecuzdan.app.ui.util.formatTurkishCurrency
 import java.util.Calendar
@@ -33,14 +35,22 @@ import java.util.Calendar
 @Composable
 fun UpcomingPaymentsScreen(
     subscriptions: List<Subscription>,
+    loans: List<Loan> = emptyList(),
     onRecordPayment: (Subscription) -> Unit
 ) {
     val todayDay = remember { Calendar.getInstance().get(Calendar.DAY_OF_MONTH) }
-    val upcoming = remember(subscriptions, todayDay) {
+    val upcomingSubs = remember(subscriptions, todayDay) {
         subscriptions.filter { it.isActive && it.billingDay > todayDay }
             .sortedBy { it.billingDay }
     }
-    val totalUpcoming = remember(upcoming) { upcoming.sumOf { it.monthlyEquivalent() } }
+    val upcomingLoans = remember(loans, todayDay) {
+        loans.map { LoanCalculator.summarize(it) }
+            .filter { it.isActive && it.loan.paymentDay > todayDay }
+            .sortedBy { it.loan.paymentDay }
+    }
+    val totalUpcoming = remember(upcomingSubs, upcomingLoans) {
+        upcomingSubs.sumOf { it.monthlyEquivalent() } + upcomingLoans.sumOf { it.monthlyInstallment }
+    }
 
     Column(
         modifier = Modifier
@@ -75,15 +85,32 @@ fun UpcomingPaymentsScreen(
             }
         }
 
-        if (upcoming.isEmpty()) {
+        if (upcomingSubs.isEmpty() && upcomingLoans.isEmpty()) {
             Text(
-                text = "Bu ay için ileriki bir tarihte bekleyen abonelik ödemesi yok.",
+                text = "Bu ay için ileriki bir tarihte bekleyen abonelik veya kredi ödemesi yok.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         } else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                items(upcoming, key = { it.id }) { sub ->
+                items(upcomingLoans, key = { "loan_${it.loan.id}" }) { summary ->
+                    val daysLeft = summary.loan.paymentDay - todayDay
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+                    ) {
+                        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text("${summary.loan.name} (Kredi Taksiti)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                text = "Ayın ${summary.loan.paymentDay}. günü ($daysLeft gün kaldı) • ${formatTurkishCurrency(summary.monthlyInstallment)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = WarningAmber
+                            )
+                        }
+                    }
+                }
+                items(upcomingSubs, key = { it.id }) { sub ->
                     val daysLeft = sub.billingDay - todayDay
                     Card(
                         modifier = Modifier.fillMaxWidth(),

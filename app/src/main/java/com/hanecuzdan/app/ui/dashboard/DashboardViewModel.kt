@@ -4,10 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.hanecuzdan.app.core.notification.BudgetNotificationHelper
+import com.hanecuzdan.app.data.local.dao.LoanDao
 import com.hanecuzdan.app.data.local.dao.SubscriptionDao
 import com.hanecuzdan.app.domain.model.Budget
 import com.hanecuzdan.app.domain.model.BudgetStatus
 import com.hanecuzdan.app.domain.model.Category
+import com.hanecuzdan.app.domain.model.Loan
 import com.hanecuzdan.app.domain.model.Subscription
 import com.hanecuzdan.app.domain.model.SyncStatusSummary
 import com.hanecuzdan.app.domain.model.TimePeriod
@@ -36,6 +38,7 @@ data class DashboardUiState(
     val budgets: List<Budget> = emptyList(),
     val budgetStatuses: List<BudgetStatus> = emptyList(),
     val subscriptions: List<Subscription> = emptyList(),
+    val loans: List<Loan> = emptyList(),
     val metrics: DashboardMetrics = DashboardMetrics(),
     val syncStatus: SyncStatusSummary = SyncStatusSummary()
 )
@@ -46,6 +49,7 @@ class DashboardViewModel(
     private val budgetRepository: BudgetRepository,
     private val syncRepository: SyncRepository,
     private val subscriptionDao: SubscriptionDao,
+    private val loanDao: LoanDao,
     private val metricsCalculator: DashboardMetricsCalculator,
     private val budgetEvaluator: BudgetEvaluator,
     private val notificationHelper: BudgetNotificationHelper
@@ -57,19 +61,20 @@ class DashboardViewModel(
         transactionRepository.observeAllTransactions(),
         categoryRepository.observeCategories(),
         budgetRepository.observeBudgets(),
-        subscriptionDao.observeAll().map { list -> list.map { it.toDomain() } }
-    ) { transactions, categories, budgets, subscriptions ->
-        Quad(transactions, categories, budgets, subscriptions)
+        subscriptionDao.observeAll().map { list -> list.map { it.toDomain() } },
+        loanDao.observeAll().map { list -> list.map { it.toDomain() } }
+    ) { transactions, categories, budgets, subscriptions, loans ->
+        Quint(transactions, categories, budgets, subscriptions, loans)
     }
 
     val uiState: StateFlow<DashboardUiState> = combine(
         baseFlow,
         syncRepository.syncStatus,
         selectedPeriod
-    ) { (transactions, categories, budgets, subscriptions), syncStatus, period ->
+    ) { (transactions, categories, budgets, subscriptions, loans), syncStatus, period ->
         val now = System.currentTimeMillis()
         val filtered = metricsCalculator.filterByPeriod(transactions, period, now)
-        val metrics = metricsCalculator.calculate(transactions, budgets, period, now, subscriptions)
+        val metrics = metricsCalculator.calculate(transactions, budgets, period, now, subscriptions, loans)
         val budgetStatuses = budgetEvaluator.evaluate(budgets, transactions, now)
 
         DashboardUiState(
@@ -81,6 +86,7 @@ class DashboardViewModel(
             budgets = budgets,
             budgetStatuses = budgetStatuses,
             subscriptions = subscriptions,
+            loans = loans,
             metrics = metrics,
             syncStatus = syncStatus
         )
@@ -116,7 +122,7 @@ class DashboardViewModel(
         }
     }
 
-    private data class Quad<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
+    private data class Quint<A, B, C, D, E>(val first: A, val second: B, val third: C, val fourth: D, val fifth: E)
 
     class Factory(
         private val transactionRepository: TransactionRepository,
@@ -124,6 +130,7 @@ class DashboardViewModel(
         private val budgetRepository: BudgetRepository,
         private val syncRepository: SyncRepository,
         private val subscriptionDao: SubscriptionDao,
+        private val loanDao: LoanDao,
         private val metricsCalculator: DashboardMetricsCalculator,
         private val budgetEvaluator: BudgetEvaluator,
         private val notificationHelper: BudgetNotificationHelper
@@ -136,6 +143,7 @@ class DashboardViewModel(
                 budgetRepository,
                 syncRepository,
                 subscriptionDao,
+                loanDao,
                 metricsCalculator,
                 budgetEvaluator,
                 notificationHelper

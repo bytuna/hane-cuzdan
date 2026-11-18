@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.hanecuzdan.app.data.local.entity.LoanEntity
 import com.hanecuzdan.app.data.local.entity.SavingsGoalEntity
 import com.hanecuzdan.app.data.local.entity.SubscriptionEntity
 import com.hanecuzdan.app.domain.model.DataScope
@@ -47,6 +48,7 @@ import com.hanecuzdan.app.ui.navigation.HaneCuzdanDrawerContent
 import com.hanecuzdan.app.ui.screens.BudgetLimitsScreen
 import com.hanecuzdan.app.ui.screens.CategoriesScreen
 import com.hanecuzdan.app.ui.screens.ExpenseSplitScreen
+import com.hanecuzdan.app.ui.screens.LoansScreen
 import com.hanecuzdan.app.ui.screens.MonthlyExpensesScreen
 import com.hanecuzdan.app.ui.screens.ReceiptArchiveScreen
 import com.hanecuzdan.app.ui.screens.SavingsGoalsScreen
@@ -130,6 +132,7 @@ private fun MainScaffold(
             container.budgetRepository,
             container.syncRepository,
             container.subscriptionDao,
+            container.loanDao,
             container.metricsCalculator,
             container.budgetEvaluator,
             container.budgetNotificationHelper
@@ -247,6 +250,7 @@ private fun MainScaffold(
                     )
                     AppDestination.UPCOMING_PAYMENTS -> UpcomingPaymentsScreen(
                         subscriptions = subscriptions,
+                        loans = state.loans,
                         onRecordPayment = { sub ->
                             viewModel.saveTransaction(
                                 Transaction(
@@ -267,7 +271,17 @@ private fun MainScaffold(
                     )
                     AppDestination.MONTHLY_EXPENSES -> MonthlyExpensesScreen(
                         allTransactions = state.transactions,
-                        subscriptions = subscriptions
+                        subscriptions = subscriptions,
+                        loans = state.loans
+                    )
+                    AppDestination.LOANS -> LoansScreen(
+                        loans = state.loans,
+                        onAddLoan = { loan ->
+                            scope.launch { container.loanDao.upsert(LoanEntity.fromDomain(loan)) }
+                        },
+                        onDeleteLoan = { id ->
+                            scope.launch { container.loanDao.deleteById(id) }
+                        }
                     )
                     AppDestination.SMART_INSIGHTS -> SmartInsightsScreen(
                         transactions = state.transactions,
