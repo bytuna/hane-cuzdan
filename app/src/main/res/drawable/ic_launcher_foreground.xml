@@ -1,0 +1,43 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Hane (Ev) Çatısı - Altın/Beyaz vurgu -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M28,48 L54,27 L80,48"
+        android:strokeWidth="5.5"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- Cüzdan Gövdesi (Evin içinde) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M34,47 L74,47 C76.76,47 79,49.24 79,52 L79,73 C79,75.76 76.76,78 74,78 L34,78 C31.24,78 29,75.76 29,73 L29,52 C29,49.24 31.24,47 34,47 Z" />
+
+    <!-- Cüzdan Üst Kapak / Şerit -->
+    <path
+        android:fillColor="#FFB2DFDB"
+        android:pathData="M34,47 L74,47 C76.76,47 79,49.24 79,52 L79,55 L29,55 L29,52 C29,49.24 31.24,47 34,47 Z" />
+
+    <!-- Cüzdan Klips / Kart Düğmesi -->
+    <path
+        android:fillColor="#FF006C51"
+        android:pathData="M65,60 L79,60 L79,68 L65,68 C62.79,68 61,66.21 61,64 C61,61.79 62.79,60 65,60 Z" />
+
+    <!-- Klips içi altın nokta -->
+    <path
+        android:fillColor="#FFFFD54F"
+        android:pathData="M66.5,64 m-2.2,0 a2.2,2.2 0 1,0 4.4,0 a2.2,2.2 0 1,0 -4.4,0" />
+
+    <!-- Ev / Cüzdan içi küçük TL / büyüme çizgisi -->
+    <path
+        android:fillColor="#FF006C51"
+        android:pathData="M38,63 L49,63 M38,68 L45,68"
+        android:strokeWidth="2.8"
+        android:strokeColor="#FF006C51"
+        android:strokeLineCap="round" />
+</vector>
