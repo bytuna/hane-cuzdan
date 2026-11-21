@@ -5,10 +5,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -37,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.hanecuzdan.app.domain.model.DataScope
 import com.hanecuzdan.app.domain.model.Transaction
@@ -164,7 +167,10 @@ fun SwipeableTransactionItem(
                             Text(
                                 text = transaction.title,
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false)
                             )
                             if (transaction.receiptPath != null) {
                                 Icon(
@@ -184,7 +190,10 @@ fun SwipeableTransactionItem(
                             Text(
                                 text = "${transaction.categoryName} • $dateLabel$creatorText",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false)
                             )
                             val isFamily = transaction.scope == DataScope.FAMILY
                             Surface(
@@ -195,6 +204,8 @@ fun SwipeableTransactionItem(
                                     text = if (isFamily) "Aile" else "Kişisel",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = if (isFamily) Color(0xFF00695C) else Color(0xFF6A1B9A),
+                                    maxLines = 1,
+                                    softWrap = false,
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                 )
                             }
@@ -202,13 +213,17 @@ fun SwipeableTransactionItem(
                     }
                 }
 
+                Spacer(modifier = Modifier.width(8.dp))
+
                 val sign = if (transaction.type == TransactionType.INCOME) "+" else "-"
                 val amountColor = if (transaction.type == TransactionType.INCOME) IncomeGreen else ExpenseRed
                 Text(
                     text = "$sign${formatTurkishCurrency(transaction.amount)}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = amountColor
+                    color = amountColor,
+                    maxLines = 1,
+                    softWrap = false
                 )
             }
         }

@@ -1,11 +1,14 @@
 package com.hanecuzdan.app.ui.dashboard
 
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -25,20 +28,24 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
 import com.hanecuzdan.app.domain.model.BudgetThresholdLevel
 import com.hanecuzdan.app.domain.model.DataScope
 import com.hanecuzdan.app.domain.model.TimePeriod
@@ -79,34 +86,26 @@ fun DashboardContent(
         state.budgetStatuses.filter { it.thresholdLevel != BudgetThresholdLevel.NONE }
     }
 
-    Scaffold(
-        modifier = modifier,
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onAddClick,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "İşlem Ekle")
-            }
-        }
-    ) { innerPadding ->
+    var fabOffsetX by remember { mutableFloatStateOf(0f) }
+    var fabOffsetY by remember { mutableFloatStateOf(0f) }
+    val density = LocalDensity.current
+
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val maxWidthPx = with(density) { maxWidth.toPx() }
+        val maxHeightPx = with(density) { maxHeight.toPx() }
+        val fabSizePx = with(density) { 56.dp.toPx() }
+        val marginPx = with(density) { 16.dp.toPx() }
+
         if (state.isLoading) {
             DashboardSkeletonLoader(
-                modifier = Modifier
-                    .padding(innerPadding)
-                    .padding(16.dp)
+                modifier = Modifier.padding(16.dp)
             )
-            return@Scaffold
-        }
-
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 88.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
             item {
                 SummaryCardsGrid(
                     metrics = state.metrics,
@@ -257,6 +256,28 @@ fun DashboardContent(
                     )
                 }
             }
+        }
+        }
+
+        FloatingActionButton(
+            onClick = onAddClick,
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+                .offset { IntOffset(fabOffsetX.roundToInt(), fabOffsetY.roundToInt()) }
+                .pointerInput(maxWidthPx, maxHeightPx) {
+                    detectDragGestures { change, dragAmount ->
+                        change.consume()
+                        val minX = -(maxWidthPx - fabSizePx - 2 * marginPx).coerceAtLeast(0f)
+                        val minY = -(maxHeightPx - fabSizePx - 2 * marginPx).coerceAtLeast(0f)
+                        fabOffsetX = (fabOffsetX + dragAmount.x).coerceIn(minX, 0f)
+                        fabOffsetY = (fabOffsetY + dragAmount.y).coerceIn(minY, 0f)
+                    }
+                }
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "İşlem Ekle")
         }
     }
 }
