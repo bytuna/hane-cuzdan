@@ -27,6 +27,22 @@ import com.hanecuzdan.app.core.security.SecurityPreferences
 
 @Composable
 fun SecuritySettingsScreen(securityPreferences: SecurityPreferences) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text("Güvenlik & Uygulama Kilidi", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        SecuritySettingsContent(securityPreferences = securityPreferences)
+    }
+}
+
+@Composable
+fun SecuritySettingsContent(
+    securityPreferences: SecurityPreferences,
+    onSecurityChanged: (lockEnabled: Boolean, biometricEnabled: Boolean) -> Unit = { _, _ -> }
+) {
     val context = LocalContext.current
     var lockEnabled by remember { mutableStateOf(securityPreferences.isAppLockEnabled) }
     var biometricEnabled by remember { mutableStateOf(securityPreferences.isBiometricEnabled) }
@@ -38,12 +54,9 @@ fun SecuritySettingsScreen(securityPreferences: SecurityPreferences) {
     val biometricSupported = remember { BiometricAuthHelper.isBiometricAvailable(context) }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
+        modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text("Güvenlik & Uygulama Kilidi", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -57,6 +70,7 @@ fun SecuritySettingsScreen(securityPreferences: SecurityPreferences) {
                     if (securityPreferences.hasPasswordSet() || !it) {
                         lockEnabled = it
                         securityPreferences.isAppLockEnabled = it
+                        onSecurityChanged(lockEnabled, biometricEnabled)
                     } else {
                         statusMessage = "Önce aşağıdan parola ve gizli soru belirleyin."
                     }
@@ -76,6 +90,7 @@ fun SecuritySettingsScreen(securityPreferences: SecurityPreferences) {
                 onCheckedChange = {
                     biometricEnabled = it
                     securityPreferences.isBiometricEnabled = it
+                    onSecurityChanged(lockEnabled, biometricEnabled)
                 }
             )
         }
@@ -107,6 +122,7 @@ fun SecuritySettingsScreen(securityPreferences: SecurityPreferences) {
                 } else {
                     securityPreferences.savePasswordAndSecret(password, question, answer)
                     lockEnabled = true
+                    onSecurityChanged(lockEnabled, biometricEnabled)
                     password = ""
                     answer = ""
                     statusMessage = "Güvenlik ayarları şifreli olarak kaydedildi."

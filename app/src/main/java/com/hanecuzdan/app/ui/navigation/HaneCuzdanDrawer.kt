@@ -43,14 +43,29 @@ fun HaneCuzdanDrawerContent(
             }
             HorizontalDivider(modifier = Modifier.padding(bottom = 8.dp))
 
-            AppDestination.entries.forEach { destination ->
-                NavigationDrawerItem(
-                    icon = { Icon(destination.icon, contentDescription = destination.label) },
-                    label = { Text(destination.label) },
-                    selected = selectedDestination == destination,
-                    onClick = { onDestinationSelected(destination) },
-                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                )
+            DrawerGroup.entries.forEachIndexed { groupIndex, group ->
+                val items = AppDestination.entries.filter { it.group == group }
+                if (items.isNotEmpty()) {
+                    if (groupIndex > 0) {
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    }
+                    Text(
+                        text = group.title,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 28.dp, vertical = 6.dp)
+                    )
+                    items.forEach { destination ->
+                        NavigationDrawerItem(
+                            icon = { Icon(destination.icon, contentDescription = destination.label) },
+                            label = { Text(destination.label) },
+                            selected = selectedDestination == destination,
+                            onClick = { onDestinationSelected(destination) },
+                            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                        )
+                    }
+                }
             }
             Spacer(modifier = Modifier.height(16.dp))
         }

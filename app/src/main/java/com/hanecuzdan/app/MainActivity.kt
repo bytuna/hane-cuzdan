@@ -17,8 +17,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -44,6 +42,7 @@ import com.hanecuzdan.app.domain.model.TransactionType
 import com.hanecuzdan.app.ui.dashboard.DashboardContent
 import com.hanecuzdan.app.ui.dashboard.DashboardViewModel
 import com.hanecuzdan.app.ui.navigation.AppDestination
+import com.hanecuzdan.app.ui.navigation.CurvedBottomNavigationBar
 import com.hanecuzdan.app.ui.navigation.HaneCuzdanDrawerContent
 import com.hanecuzdan.app.ui.screens.BudgetLimitsScreen
 import com.hanecuzdan.app.ui.screens.CategoriesScreen
@@ -60,7 +59,6 @@ import com.hanecuzdan.app.ui.screens.UpcomingPaymentsScreen
 import kotlinx.coroutines.flow.map
 import java.util.UUID
 import com.hanecuzdan.app.ui.security.LockScreen
-import com.hanecuzdan.app.ui.security.SecuritySettingsScreen
 import com.hanecuzdan.app.ui.theme.HaneCuzdanTheme
 import com.hanecuzdan.app.ui.transaction.AddTransactionSheet
 import kotlinx.coroutines.launch
@@ -208,22 +206,22 @@ private fun MainScaffold(
                     AppDestination.SAVINGS_GOALS,
                     AppDestination.RECEIPT_ARCHIVE
                 )
-                NavigationBar {
-                    quickTabs.forEach { dest ->
-                        NavigationBarItem(
-                            selected = currentDestination == dest,
-                            onClick = {
-                                if (dest == AppDestination.DASHBOARD) {
-                                    navStack = listOf(AppDestination.DASHBOARD)
-                                } else if (dest != currentDestination) {
-                                    navStack = navStack + dest
-                                }
-                            },
-                            icon = { Icon(dest.icon, contentDescription = dest.label) },
-                            label = { Text(dest.label, maxLines = 1) }
-                        )
-                    }
+                val bottomTabs = if (currentDestination in quickTabs) {
+                    quickTabs
+                } else {
+                    quickTabs + currentDestination
                 }
+                CurvedBottomNavigationBar(
+                    items = bottomTabs,
+                    currentDestination = currentDestination,
+                    onItemSelected = { dest ->
+                        if (dest == AppDestination.DASHBOARD) {
+                            navStack = listOf(AppDestination.DASHBOARD)
+                        } else if (dest != currentDestination) {
+                            navStack = navStack + dest
+                        }
+                    }
+                )
             }
         ) { innerPadding ->
             Box(modifier = Modifier.padding(innerPadding)) {
@@ -324,19 +322,8 @@ private fun MainScaffold(
                         }
                     )
                     AppDestination.EXPENSE_SPLIT -> ExpenseSplitScreen()
-                    AppDestination.FAMILY_POOL -> ScopeTransactionsScreen(
-                        title = "Aile Havuzu",
-                        subtitle = "Bulut tabanlı senkronize ortak aile harcamaları ve abonelikleri",
-                        scope = DataScope.FAMILY,
-                        allTransactions = state.transactions,
-                        subscriptions = subscriptions,
-                        onDelete = { viewModel.deleteTransaction(it.id) },
-                        onEdit = { editingTransaction = it; showAddSheet = true }
-                    )
-                    AppDestination.PERSONAL_PROFILE -> ScopeTransactionsScreen(
-                        title = "Kişisel Profil",
-                        subtitle = "Yalnızca bu cihazda tutulan kişisel harcamalar ve abonelikler",
-                        scope = DataScope.PERSONAL,
+                    AppDestination.SCOPE_TRANSACTIONS -> ScopeTransactionsScreen(
+                        initialScope = DataScope.FAMILY,
                         allTransactions = state.transactions,
                         subscriptions = subscriptions,
                         onDelete = { viewModel.deleteTransaction(it.id) },
@@ -367,9 +354,6 @@ private fun MainScaffold(
                             snapshot.budgets.forEach { container.budgetRepository.upsertBudget(it) }
                             snapshot.transactions.forEach { container.transactionRepository.upsertTransaction(it) }
                         }
-                    )
-                    AppDestination.SECURITY -> SecuritySettingsScreen(
-                        securityPreferences = container.securityPreferences
                     )
                 }
             }

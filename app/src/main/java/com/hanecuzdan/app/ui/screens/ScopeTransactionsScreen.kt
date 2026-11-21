@@ -15,9 +15,15 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -31,14 +37,20 @@ import java.util.Calendar
 
 @Composable
 fun ScopeTransactionsScreen(
-    title: String,
-    subtitle: String,
-    scope: DataScope,
+    initialScope: DataScope = DataScope.FAMILY,
     allTransactions: List<Transaction>,
     subscriptions: List<Subscription> = emptyList(),
     onDelete: (Transaction) -> Unit,
     onEdit: (Transaction) -> Unit
 ) {
+    var scope by remember(initialScope) { mutableStateOf(initialScope) }
+    val title = if (scope == DataScope.FAMILY) "Aile Havuzu" else "Kişisel Profil"
+    val subtitle = if (scope == DataScope.FAMILY) {
+        "Bulut tabanlı senkronize ortak aile harcamaları ve abonelikleri"
+    } else {
+        "Yalnızca bu cihazda tutulan kişisel harcamalar ve abonelikler"
+    }
+
     val filteredTxs = remember(allTransactions, scope) {
         allTransactions.filter { it.scope == scope }
     }
@@ -54,8 +66,21 @@ fun ScopeTransactionsScreen(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Hane & Kişisel", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    val scopes = listOf(DataScope.FAMILY to "Aile Havuzu", DataScope.PERSONAL to "Kişisel Profil")
+                    scopes.forEachIndexed { index, (itemScope, label) ->
+                        SegmentedButton(
+                            selected = scope == itemScope,
+                            onClick = { scope = itemScope },
+                            shape = SegmentedButtonDefaults.itemShape(index, scopes.size)
+                        ) {
+                            Text(label)
+                        }
+                    }
+                }
+                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                 Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
