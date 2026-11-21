@@ -43,14 +43,4 @@
 
 ---
 
-## Kurulum ve Derleme
 
-```bash
-./gradlew assembleDebug
-```
-
-Bağlı cihaza yüklemek için:
-
-```bash
-./gradlew installDebug
-```
