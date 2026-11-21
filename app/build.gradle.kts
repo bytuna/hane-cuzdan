@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -29,11 +31,40 @@ android {
         localeFilters += listOf("tr", "en")
     }
 
+    val keystorePropsFile = rootProject.file("keystore.properties")
+    val keystoreProps = Properties().apply {
+        if (keystorePropsFile.exists()) {
+            keystorePropsFile.inputStream().use { load(it) }
+        }
+    }
+    val releaseKeystoreFile = file(keystoreProps.getProperty("storeFile", "release.keystore"))
+    val releaseKeystorePassword = keystoreProps.getProperty("storePassword")
+        ?: System.getenv("KEYSTORE_PASSWORD")
+    val releaseKeyAlias = keystoreProps.getProperty("keyAlias") ?: "hanecuzdan"
+    val releaseKeyPassword = keystoreProps.getProperty("keyPassword")
+        ?: System.getenv("KEYSTORE_PASSWORD")
+    val hasReleaseSigning = releaseKeystoreFile.exists() && !releaseKeystorePassword.isNullOrBlank()
+
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = releaseKeystoreFile
+                storePassword = releaseKeystorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (hasReleaseSigning) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
