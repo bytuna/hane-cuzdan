@@ -148,8 +148,12 @@ fun ReceiptArchiveScreen(transactionsWithReceipts: List<Transaction>) {
                                         color = MaterialTheme.colorScheme.primary,
                                         fontWeight = FontWeight.Medium
                                     )
+                                    val creatorSuffix = tx.createdByUserId
+                                        .takeIf { it.isNotBlank() && it != "local_user" }
+                                        ?.let { " • Ekleyen: $it" }
+                                        .orEmpty()
                                     Text(
-                                        text = "$dateLabel • ${if (tx.scope == DataScope.FAMILY) "Aile" else "Kişisel"}",
+                                        text = "$dateLabel • ${if (tx.scope == DataScope.FAMILY) "Aile" else "Kişisel"}$creatorSuffix",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )

@@ -15,7 +15,8 @@ data class Subscription(
     val billingDay: Int, // 1..31
     val categoryName: String,
     val scope: DataScope = DataScope.FAMILY,
-    val isActive: Boolean = true
+    val isActive: Boolean = true,
+    val createdByUserId: String = ""
 ) {
     /** Yıllık abonelikleri aylık eşdeğer maliyete çevirir. */
     fun monthlyEquivalent(): Double = if (cycle == BillingCycle.YEARLY) amount / 12.0 else amount

@@ -22,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -32,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.hanecuzdan.app.core.update.AppReleaseInfo
 import com.hanecuzdan.app.data.local.entity.LoanEntity
 import com.hanecuzdan.app.data.local.entity.SavingsGoalEntity
 import com.hanecuzdan.app.data.local.entity.SubscriptionEntity
@@ -39,6 +41,7 @@ import com.hanecuzdan.app.domain.model.DataScope
 import com.hanecuzdan.app.domain.model.SyncConnectionState
 import com.hanecuzdan.app.domain.model.Transaction
 import com.hanecuzdan.app.domain.model.TransactionType
+import com.hanecuzdan.app.ui.components.AppUpdateDialog
 import com.hanecuzdan.app.ui.dashboard.DashboardContent
 import com.hanecuzdan.app.ui.dashboard.DashboardViewModel
 import com.hanecuzdan.app.ui.navigation.AppDestination
@@ -46,7 +49,6 @@ import com.hanecuzdan.app.ui.navigation.CurvedBottomNavigationBar
 import com.hanecuzdan.app.ui.navigation.HaneCuzdanDrawerContent
 import com.hanecuzdan.app.ui.screens.BudgetLimitsScreen
 import com.hanecuzdan.app.ui.screens.CategoriesScreen
-import com.hanecuzdan.app.ui.screens.ExpenseSplitScreen
 import com.hanecuzdan.app.ui.screens.LoansScreen
 import com.hanecuzdan.app.ui.screens.MonthlyExpensesScreen
 import com.hanecuzdan.app.ui.screens.ReceiptArchiveScreen
@@ -144,13 +146,22 @@ private fun MainScaffold(
     val savingsGoals by remember(container) {
         container.savingsGoalDao.observeAll().map { list -> list.map { it.toDomain() } }
     }.collectAsState(initial = emptyList())
+    val familyMembers by container.syncRepository.familyMembers.collectAsState()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
     var navStack by remember { mutableStateOf(listOf(AppDestination.DASHBOARD)) }
     val currentDestination = navStack.last()
+    var drawerUserName by remember { mutableStateOf(container.securityPreferences.userName) }
+    var drawerFamilyId by remember { mutableStateOf(container.securityPreferences.familyId) }
     var showAddSheet by remember { mutableStateOf(false) }
     var editingTransaction by remember { mutableStateOf<Transaction?>(null) }
+    var startupUpdateRelease by remember { mutableStateOf<AppReleaseInfo?>(null) }
+
+    LaunchedEffect(Unit) {
+        container.appUpdateManager.checkForUpdate()
+            .onSuccess { release -> startupUpdateRelease = release }
+    }
 
     BackHandler(enabled = drawerState.isOpen || navStack.size > 1) {
         if (drawerState.isOpen) {
@@ -165,8 +176,8 @@ private fun MainScaffold(
         drawerContent = {
             HaneCuzdanDrawerContent(
                 selectedDestination = currentDestination,
-                userName = container.securityPreferences.userName,
-                familyId = container.securityPreferences.familyId,
+                userName = drawerUserName,
+                familyId = drawerFamilyId,
                 onDestinationSelected = { dest ->
                     if (dest == AppDestination.DASHBOARD) {
                         navStack = listOf(AppDestination.DASHBOARD)
@@ -288,6 +299,7 @@ private fun MainScaffold(
                     )
                     AppDestination.SUBSCRIPTIONS -> SubscriptionsScreen(
                         subscriptions = subscriptions,
+                        currentUserName = drawerUserName,
                         onAddSubscription = { sub ->
                             scope.launch { container.subscriptionDao.upsert(SubscriptionEntity.fromDomain(sub)) }
                         },
@@ -321,7 +333,6 @@ private fun MainScaffold(
                             scope.launch { container.savingsGoalDao.deleteById(id) }
                         }
                     )
-                    AppDestination.EXPENSE_SPLIT -> ExpenseSplitScreen()
                     AppDestination.SCOPE_TRANSACTIONS -> ScopeTransactionsScreen(
                         initialScope = DataScope.FAMILY,
                         allTransactions = state.transactions,
@@ -348,7 +359,15 @@ private fun MainScaffold(
                         transactions = state.transactions,
                         categories = state.categories,
                         budgets = state.budgets,
+                        familyMembers = familyMembers,
+                        appUpdateManager = container.appUpdateManager,
                         onThemeModeChanged = onThemeModeChanged,
+                        onProfileSaved = { newName, newFamilyId ->
+                            drawerUserName = newName
+                            drawerFamilyId = newFamilyId
+                            container.syncRepository.refreshFamilyListener()
+                            viewModel.triggerSync()
+                        },
                         onRestoreSnapshot = { snapshot ->
                             snapshot.categories.forEach { container.categoryRepository.addCustomCategory(it) }
                             snapshot.budgets.forEach { container.budgetRepository.upsertBudget(it) }
@@ -376,6 +395,15 @@ private fun MainScaffold(
                 viewModel.saveTransaction(tx)
                 showAddSheet = false
             }
+        )
+    }
+
+    val pendingRelease = startupUpdateRelease
+    if (pendingRelease != null) {
+        AppUpdateDialog(
+            releaseInfo = pendingRelease,
+            updateManager = container.appUpdateManager,
+            onDismiss = { startupUpdateRelease = null }
         )
     }
 }

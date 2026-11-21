@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -24,9 +25,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,12 +56,14 @@ fun SwipeableTransactionItem(
     onEdit: (Transaction) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
             when (value) {
                 SwipeToDismissBoxValue.EndToStart -> {
-                    onDelete(transaction)
-                    true
+                    showDeleteConfirm = true
+                    false
                 }
                 SwipeToDismissBoxValue.StartToEnd -> {
                     onEdit(transaction)
@@ -66,6 +73,32 @@ fun SwipeableTransactionItem(
             }
         }
     )
+
+    if (showDeleteConfirm) {
+        val label = transaction.title.ifBlank { transaction.categoryName }
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("İşlemi Sil") },
+            text = {
+                Text("\"$label\" (${formatTurkishCurrency(transaction.amount)}) işlemini silmek istediğinize emin misiniz?")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteConfirm = false
+                        onDelete(transaction)
+                    }
+                ) {
+                    Text("Sil", color = ExpenseRed, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text("İptal")
+                }
+            }
+        )
+    }
 
     val dateLabel = remember(transaction.timestamp) {
         SimpleDateFormat("dd MMM, HH:mm", Locale("tr", "TR")).format(Date(transaction.timestamp))
@@ -144,8 +177,12 @@ fun SwipeableTransactionItem(
                         }
 
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                            val creatorText = transaction.createdByUserId
+                                .takeIf { it.isNotBlank() && it != "local_user" }
+                                ?.let { " • $it" }
+                                .orEmpty()
                             Text(
-                                text = "${transaction.categoryName} • $dateLabel",
+                                text = "${transaction.categoryName} • $dateLabel$creatorText",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

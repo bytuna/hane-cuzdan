@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.hanecuzdan.app.data.local.dao.BudgetDao
 import com.hanecuzdan.app.data.local.dao.CategoryDao
 import com.hanecuzdan.app.data.local.dao.LoanDao
@@ -29,7 +31,7 @@ import com.hanecuzdan.app.data.local.entity.TransactionEntity
         SavingsGoalEntity::class,
         LoanEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class HaneCuzdanDatabase : RoomDatabase() {
@@ -45,13 +47,22 @@ abstract class HaneCuzdanDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: HaneCuzdanDatabase? = null
 
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE subscriptions ADD COLUMN createdByUserId TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
         fun getInstance(context: Context): HaneCuzdanDatabase {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
                     context.applicationContext,
                     HaneCuzdanDatabase::class.java,
                     "hanecuzdan.db"
-                ).fallbackToDestructiveMigration().build().also { INSTANCE = it }
+                ).addMigrations(MIGRATION_4_5)
+                    .fallbackToDestructiveMigration()
+                    .build()
+                    .also { INSTANCE = it }
             }
         }
     }

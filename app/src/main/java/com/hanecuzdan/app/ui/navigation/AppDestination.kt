@@ -4,7 +4,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Autorenew
-import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.EventAvailable
@@ -36,7 +35,6 @@ enum class AppDestination(
 
     // 2. Hane & Planlama
     SCOPE_TRANSACTIONS("Hane & Kişisel", Icons.Default.Groups, DrawerGroup.HOUSEHOLD_PLANNING),
-    EXPENSE_SPLIT("Masraf Bölüş", Icons.Default.Calculate, DrawerGroup.HOUSEHOLD_PLANNING),
     BUDGET_LIMITS("Bütçe Limitleri", Icons.Default.Speed, DrawerGroup.HOUSEHOLD_PLANNING),
     SAVINGS_GOALS("Hedefler", Icons.Default.Savings, DrawerGroup.HOUSEHOLD_PLANNING),
 

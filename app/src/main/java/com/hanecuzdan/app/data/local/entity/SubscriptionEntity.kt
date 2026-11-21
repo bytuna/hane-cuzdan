@@ -15,7 +15,8 @@ data class SubscriptionEntity(
     val billingDay: Int,
     val categoryName: String,
     val scope: String,
-    val isActive: Boolean
+    val isActive: Boolean,
+    val createdByUserId: String = ""
 ) {
     fun toDomain() = Subscription(
         id = id,
@@ -25,7 +26,8 @@ data class SubscriptionEntity(
         billingDay = billingDay,
         categoryName = categoryName,
         scope = DataScope.valueOf(scope),
-        isActive = isActive
+        isActive = isActive,
+        createdByUserId = createdByUserId
     )
 
     companion object {
@@ -37,7 +39,8 @@ data class SubscriptionEntity(
             billingDay = model.billingDay,
             categoryName = model.categoryName,
             scope = model.scope.name,
-            isActive = model.isActive
+            isActive = model.isActive,
+            createdByUserId = model.createdByUserId
         )
     }
 }
