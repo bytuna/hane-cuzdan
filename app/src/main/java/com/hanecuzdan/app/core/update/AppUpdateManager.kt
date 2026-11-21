@@ -44,7 +44,9 @@ class AppUpdateManager(private val context: Context) {
                 .build()
 
             client.newCall(request).execute().use { response ->
-                if (response.code == 404) return@runCatching null
+                if (response.code == 404) {
+                    throw IllegalStateException("GitHub'da henüz yayınlanmış bir Release bulunamadı.")
+                }
                 if (!response.isSuccessful) {
                     throw IllegalStateException("GitHub API hatası: ${response.code}")
                 }
