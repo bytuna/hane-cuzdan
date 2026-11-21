@@ -4,16 +4,21 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
+import com.hanecuzdan.app.data.local.dao.BudgetDao
 import com.hanecuzdan.app.data.local.dao.SyncQueueDao
 import com.hanecuzdan.app.data.local.dao.TransactionDao
+import com.hanecuzdan.app.data.local.entity.BudgetEntity
 import com.hanecuzdan.app.data.local.entity.TransactionEntity
+import com.hanecuzdan.app.data.remote.FamilyMember
 import com.hanecuzdan.app.data.remote.FamilyRemoteDataSource
+import com.hanecuzdan.app.domain.model.DataScope
 import com.hanecuzdan.app.domain.model.SyncConnectionState
 import com.hanecuzdan.app.domain.model.SyncStatus
 import com.hanecuzdan.app.domain.model.SyncStatusSummary
 import com.hanecuzdan.app.domain.repository.SyncRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,33 +30,96 @@ class SyncManager(
     context: Context,
     private val syncQueueDao: SyncQueueDao,
     private val transactionDao: TransactionDao,
+    private val budgetDao: BudgetDao,
     private val remoteDataSource: FamilyRemoteDataSource,
-    private val familyIdProvider: () -> String?
+    private val familyIdProvider: () -> String?,
+    private val memberIdProvider: () -> String,
+    private val userNameProvider: () -> String
 ) : SyncRepository {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var remoteObserverJob: Job? = null
     private val connectivityManager =
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
     private val _syncStatus = MutableStateFlow(SyncStatusSummary())
     override val syncStatus: StateFlow<SyncStatusSummary> = _syncStatus.asStateFlow()
 
+    private val _familyMembers = MutableStateFlow<List<FamilyMember>>(emptyList())
+    override val familyMembers: StateFlow<List<FamilyMember>> = _familyMembers.asStateFlow()
+
     init {
         observeQueueAndNetwork()
         observeRemoteFamilyChanges()
     }
 
+    override fun refreshFamilyListener() {
+        observeRemoteFamilyChanges()
+    }
+
     private fun observeRemoteFamilyChanges() {
-        val familyId = familyIdProvider() ?: "default_family"
-        scope.launch {
-            runCatching {
-                remoteDataSource.observeFamilyTransactions(familyId).collect { remoteTxs ->
-                    val pendingIds = syncQueueDao.getAllPending().map { it.entityId }.toSet()
-                    remoteTxs
-                        .filter { it.id !in pendingIds }
-                        .forEach { tx ->
-                            transactionDao.upsert(TransactionEntity.fromDomain(tx))
-                        }
+        remoteObserverJob?.cancel()
+        val familyId = familyIdProvider()?.ifBlank { "default_family" } ?: "default_family"
+        remoteObserverJob = scope.launch {
+            launch {
+                runCatching {
+                    remoteDataSource.registerFamilyMember(
+                        familyId = familyId,
+                        memberId = memberIdProvider(),
+                        userName = userNameProvider()
+                    )
+                }
+            }
+            launch {
+                runCatching {
+                    remoteDataSource.observeFamilyMembers(familyId).collect { members ->
+                        _familyMembers.value = members
+                    }
+                }
+            }
+            launch {
+                runCatching {
+                    remoteDataSource.observeFamilyTransactions(familyId).collect { remoteTxs ->
+                        val pendingIds = syncQueueDao.getAllPending().map { it.entityId }.toSet()
+                        val remoteIds = remoteTxs.map { it.id }.toSet()
+
+                        remoteTxs
+                            .filter { it.id !in pendingIds }
+                            .forEach { tx ->
+                                transactionDao.upsert(TransactionEntity.fromDomain(tx))
+                            }
+
+                        transactionDao.getAllSnapshot()
+                            .filter {
+                                it.scope == DataScope.FAMILY.name &&
+                                    it.syncStatus == SyncStatus.SYNCED.name &&
+                                    it.id !in pendingIds &&
+                                    it.id !in remoteIds
+                            }
+                            .forEach { localDeleted ->
+                                transactionDao.deleteById(localDeleted.id)
+                            }
+                    }
+                }
+            }
+            launch {
+                runCatching {
+                    remoteDataSource.observeFamilyBudgets(familyId).collect { remoteBudgets ->
+                        val pendingIds = syncQueueDao.getAllPending().map { it.entityId }.toSet()
+                        val remoteIds = remoteBudgets.map { it.id }.toSet()
+
+                        remoteBudgets
+                            .filter { it.id !in pendingIds }
+                            .forEach { budget ->
+                                budgetDao.upsert(BudgetEntity.fromDomain(budget))
+                            }
+
+                        budgetDao.getAllSnapshot()
+                            .filter { it.scope == DataScope.FAMILY.name && it.id !in pendingIds && it.id !in remoteIds }
+                            .forEach { localDeleted ->
+                                budgetDao.deleteById(localDeleted.id)
+                            }
+                    }
                 }
             }
         }

@@ -50,6 +50,7 @@ import java.util.UUID
 @Composable
 fun SubscriptionsScreen(
     subscriptions: List<Subscription>,
+    currentUserName: String = "Hane Üyesi",
     onAddSubscription: (Subscription) -> Unit,
     onDeleteSubscription: (String) -> Unit,
     onRecordPayment: (Subscription) -> Unit
@@ -164,7 +165,8 @@ fun SubscriptionsScreen(
                         cycle = cycle,
                         billingDay = day,
                         categoryName = "Fatura",
-                        scope = scope
+                        scope = scope,
+                        createdByUserId = currentUserName
                     )
                 )
                 name = ""
@@ -199,8 +201,12 @@ fun SubscriptionsScreen(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(sub.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                            val creatorText = sub.createdByUserId
+                                .takeIf { it.isNotBlank() && it != "local_user" }
+                                ?.let { " • Ekleyen: $it" }
+                                .orEmpty()
                             Text(
-                                text = "Her ayın ${sub.billingDay}. günü • ${formatTurkishCurrency(sub.amount)}",
+                                text = "Her ayın ${sub.billingDay}. günü • ${formatTurkishCurrency(sub.amount)}$creatorText",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

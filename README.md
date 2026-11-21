@@ -3,7 +3,7 @@
 **HaneCüzdan**, kişisel ve aile bütçesini tek yerden yönetmek için geliştirilmiş modern bir Android finans uygulamasıdır.
 
 - **Geliştirici:** ByTuna
-- **Sürüm:** v1.1.0
+- **Sürüm:** v1.2.0
 - **Platform:** Android (Min SDK 26 / Target SDK 35)
 
 ---
@@ -16,8 +16,7 @@
 - **Akıllı Danışman:** Harcama hızı ve tasarruf önerileri
 
 ### Hane & Planlama
-- **Hane & Kişisel:** Bulut senkronizasyonlu **Aile Havuzu** ve cihaz içi **Kişisel Profil** arasında tek ekrandan geçiş
-- **Masraf Bölüş:** Ortak harcamaların paylaşımı
+- **Hane & Kişisel:** Bulut senkronizasyonlu **Aile Havuzu** ve cihaz içi **Kişisel Profil** arasında tek ekrandan geçiş; ortak işlem, bütçe limiti ve silme senkronizasyonu
 - **Bütçe Limitleri & Hedefler:** Kategori bazlı bütçe sınırları ve tasarruf hedefleri
 
 ### Taahhüt & Arşiv
@@ -28,7 +27,7 @@
 ### Yönetim, Güvenlik & Arayüz
 - **Kavisli Alt Menü:** Tüm sekmelerde aktif, animasyonlu dalgalı oyuk ve yüzen ikon balonuna sahip alt navigasyon çubuğu
 - **Gruplandırılmış Yan Menü:** Mantıksal kategorilere ayrılmış sade gezinme menüsü
-- **Ayarlar & Güvenlik:** Açılır/kapanır kartlar halinde Görünüm Teması (Sistem/Açık/Koyu), Profil & Aile Havuzu, Güvenlik & Uygulama Kilidi (Parola, Gizli Soru, Biyometrik Giriş) ve CSV / PDF / JSON dışa aktarma & yedekleme
+- **Ayarlar & Güvenlik:** Açılır/kapanır kartlar halinde Görünüm Teması (Sistem/Açık/Koyu), Profil & Aile Havuzu, Aile Havuzu Üyeleri, Güvenlik & Uygulama Kilidi (Parola, Gizli Soru, Biyometrik Giriş), CSV / PDF / JSON dışa aktarma & yedekleme ve **GitHub Releases** üzerinden uygulama içi güncelleme kontrolü
 
 ---
 

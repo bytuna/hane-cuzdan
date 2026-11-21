@@ -108,8 +108,12 @@ fun ScopeTransactionsScreen(
                             Icon(Icons.Default.Autorenew, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                             Column {
                                 Text(sub.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                                val creatorText = sub.createdByUserId
+                                    .takeIf { it.isNotBlank() && it != "local_user" }
+                                    ?.let { " • $it" }
+                                    .orEmpty()
                                 Text(
-                                    text = if (isUpcoming) "Ayın ${sub.billingDay}. günü • Gelecek Ödeme" else "Ayın ${sub.billingDay}. günü • Bu ay işlendi",
+                                    text = (if (isUpcoming) "Ayın ${sub.billingDay}. günü • Gelecek Ödeme" else "Ayın ${sub.billingDay}. günü • Bu ay işlendi") + creatorText,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import java.util.UUID
 
 /** Parola, gizli soru, biyometrik ayar ve GitHub PAT bilgisini şifreli saklar. */
 class SecurityPreferences(context: Context) {
@@ -48,6 +49,15 @@ class SecurityPreferences(context: Context) {
     var userName: String
         get() = prefs.getString(KEY_USER_NAME, "Hane Üyesi") ?: "Hane Üyesi"
         set(value) = prefs.edit().putString(KEY_USER_NAME, value).apply()
+
+    val memberId: String
+        get() {
+            val existing = prefs.getString(KEY_MEMBER_ID, null)
+            if (!existing.isNullOrBlank()) return existing
+            val generated = UUID.randomUUID().toString()
+            prefs.edit().putString(KEY_MEMBER_ID, generated).apply()
+            return generated
+        }
 
     var lastBackupAt: Long
         get() = prefs.getLong(KEY_LAST_BACKUP, 0L)
@@ -96,6 +106,7 @@ class SecurityPreferences(context: Context) {
         private const val KEY_GITHUB_PAT = "github_pat"
         private const val KEY_FAMILY_ID = "family_id"
         private const val KEY_USER_NAME = "user_name"
+        private const val KEY_MEMBER_ID = "member_id"
         private const val KEY_LAST_BACKUP = "last_backup"
         private const val KEY_THEME_MODE = "theme_mode"
     }

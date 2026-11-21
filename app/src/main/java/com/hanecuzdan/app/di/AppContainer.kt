@@ -5,6 +5,7 @@ import com.hanecuzdan.app.core.backup.GitHubBackupEngine
 import com.hanecuzdan.app.core.media.ReceiptImageManager
 import com.hanecuzdan.app.core.notification.BudgetNotificationHelper
 import com.hanecuzdan.app.core.security.SecurityPreferences
+import com.hanecuzdan.app.core.update.AppUpdateManager
 import com.hanecuzdan.app.data.local.HaneCuzdanDatabase
 import com.hanecuzdan.app.data.remote.FirestoreFamilyDataSource
 import com.hanecuzdan.app.data.repository.BudgetRepositoryImpl
@@ -25,6 +26,7 @@ class AppContainer(context: Context) {
     val securityPreferences = SecurityPreferences(context)
     val receiptImageManager = ReceiptImageManager(context)
     val budgetNotificationHelper = BudgetNotificationHelper(context)
+    val appUpdateManager = AppUpdateManager(context)
     val gitHubBackupEngine = GitHubBackupEngine()
     val subscriptionDao = database.subscriptionDao()
     val savingsGoalDao = database.savingsGoalDao()
@@ -40,15 +42,19 @@ class AppContainer(context: Context) {
     )
 
     val budgetRepository: BudgetRepository = BudgetRepositoryImpl(
-        budgetDao = database.budgetDao()
+        budgetDao = database.budgetDao(),
+        syncQueueDao = database.syncQueueDao()
     )
 
     val syncRepository: SyncRepository = SyncManager(
         context = context,
         syncQueueDao = database.syncQueueDao(),
         transactionDao = database.transactionDao(),
+        budgetDao = database.budgetDao(),
         remoteDataSource = FirestoreFamilyDataSource(),
-        familyIdProvider = { securityPreferences.familyId }
+        familyIdProvider = { securityPreferences.familyId },
+        memberIdProvider = { securityPreferences.memberId },
+        userNameProvider = { securityPreferences.userName }
     )
 
     val budgetEvaluator = BudgetEvaluator()
