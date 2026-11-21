@@ -12,6 +12,9 @@ interface SubscriptionDao {
     @Query("SELECT * FROM subscriptions ORDER BY billingDay ASC")
     fun observeAll(): Flow<List<SubscriptionEntity>>
 
+    @Query("SELECT * FROM subscriptions ORDER BY billingDay ASC")
+    suspend fun getAllSnapshot(): List<SubscriptionEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: SubscriptionEntity)
 

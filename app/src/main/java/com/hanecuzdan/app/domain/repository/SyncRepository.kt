@@ -11,5 +11,6 @@ interface SyncRepository {
     val familyMembers: StateFlow<List<FamilyMember>>
         get() = MutableStateFlow(emptyList())
     suspend fun triggerSync(): Boolean
+    suspend fun enqueueSyncItem(entityId: String, entityType: String, action: String, payloadJson: String) {}
     fun refreshFamilyListener() {}
 }

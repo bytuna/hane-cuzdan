@@ -5,6 +5,10 @@ import com.google.android.gms.tasks.Task
 import com.google.firebase.firestore.FirebaseFirestore
 import com.hanecuzdan.app.data.local.entity.SyncQueueEntity
 import com.hanecuzdan.app.domain.model.Budget
+import com.hanecuzdan.app.domain.model.Category
+import com.hanecuzdan.app.domain.model.Loan
+import com.hanecuzdan.app.domain.model.SavingsGoal
+import com.hanecuzdan.app.domain.model.Subscription
 import com.hanecuzdan.app.domain.model.SyncStatus
 import com.hanecuzdan.app.domain.model.Transaction
 import kotlinx.coroutines.channels.awaitClose
@@ -28,6 +32,10 @@ interface FamilyRemoteDataSource {
     suspend fun pushSyncItem(familyId: String, item: SyncQueueEntity): Boolean
     fun observeFamilyTransactions(familyId: String): Flow<List<Transaction>>
     fun observeFamilyBudgets(familyId: String): Flow<List<Budget>>
+    fun observeFamilySubscriptions(familyId: String): Flow<List<Subscription>>
+    fun observeFamilySavingsGoals(familyId: String): Flow<List<SavingsGoal>>
+    fun observeFamilyLoans(familyId: String): Flow<List<Loan>>
+    fun observeFamilyCategories(familyId: String): Flow<List<Category>>
     suspend fun registerFamilyMember(familyId: String, memberId: String, userName: String)
     fun observeFamilyMembers(familyId: String): Flow<List<FamilyMember>>
 }
@@ -46,6 +54,9 @@ class FirestoreFamilyDataSource : FamilyRemoteDataSource {
             "TRANSACTION" -> "transactions"
             "CATEGORY" -> "categories"
             "BUDGET" -> "budgets"
+            "SUBSCRIPTION" -> "subscriptions"
+            "SAVINGS_GOAL" -> "savings_goals"
+            "LOAN" -> "loans"
             else -> "misc"
         }
 
@@ -109,6 +120,40 @@ class FirestoreFamilyDataSource : FamilyRemoteDataSource {
                     runCatching {
                         json.decodeFromString<Budget>(rawJson)
                     }.getOrNull()
+                }
+                trySend(items)
+            }
+        awaitClose { registration.remove() }
+    }
+
+    override fun observeFamilySubscriptions(familyId: String): Flow<List<Subscription>> =
+        observeCollection(familyId, "subscriptions")
+
+    override fun observeFamilySavingsGoals(familyId: String): Flow<List<SavingsGoal>> =
+        observeCollection(familyId, "savings_goals")
+
+    override fun observeFamilyLoans(familyId: String): Flow<List<Loan>> =
+        observeCollection(familyId, "loans")
+
+    override fun observeFamilyCategories(familyId: String): Flow<List<Category>> =
+        observeCollection(familyId, "categories")
+
+    private inline fun <reified T> observeCollection(
+        familyId: String,
+        collectionName: String
+    ): Flow<List<T>> = callbackFlow {
+        val registration = db.collection("families")
+            .document(familyId)
+            .collection(collectionName)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Log.e("FirestoreSync", "observe $collectionName error", error)
+                    return@addSnapshotListener
+                }
+                if (snapshot == null) return@addSnapshotListener
+                val items = snapshot.documents.mapNotNull { doc ->
+                    val rawJson = doc.getString("payloadJson") ?: return@mapNotNull null
+                    runCatching { json.decodeFromString<T>(rawJson) }.getOrNull()
                 }
                 trySend(items)
             }

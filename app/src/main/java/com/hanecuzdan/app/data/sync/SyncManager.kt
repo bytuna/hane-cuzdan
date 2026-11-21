@@ -5,9 +5,18 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import com.hanecuzdan.app.data.local.dao.BudgetDao
+import com.hanecuzdan.app.data.local.dao.CategoryDao
+import com.hanecuzdan.app.data.local.dao.LoanDao
+import com.hanecuzdan.app.data.local.dao.SavingsGoalDao
+import com.hanecuzdan.app.data.local.dao.SubscriptionDao
 import com.hanecuzdan.app.data.local.dao.SyncQueueDao
 import com.hanecuzdan.app.data.local.dao.TransactionDao
 import com.hanecuzdan.app.data.local.entity.BudgetEntity
+import com.hanecuzdan.app.data.local.entity.CategoryEntity
+import com.hanecuzdan.app.data.local.entity.LoanEntity
+import com.hanecuzdan.app.data.local.entity.SavingsGoalEntity
+import com.hanecuzdan.app.data.local.entity.SubscriptionEntity
+import com.hanecuzdan.app.data.local.entity.SyncQueueEntity
 import com.hanecuzdan.app.data.local.entity.TransactionEntity
 import com.hanecuzdan.app.data.remote.FamilyMember
 import com.hanecuzdan.app.data.remote.FamilyRemoteDataSource
@@ -31,6 +40,10 @@ class SyncManager(
     private val syncQueueDao: SyncQueueDao,
     private val transactionDao: TransactionDao,
     private val budgetDao: BudgetDao,
+    private val subscriptionDao: SubscriptionDao,
+    private val savingsGoalDao: SavingsGoalDao,
+    private val loanDao: LoanDao,
+    private val categoryDao: CategoryDao,
     private val remoteDataSource: FamilyRemoteDataSource,
     private val familyIdProvider: () -> String?,
     private val memberIdProvider: () -> String,
@@ -55,6 +68,22 @@ class SyncManager(
 
     override fun refreshFamilyListener() {
         observeRemoteFamilyChanges()
+    }
+
+    override suspend fun enqueueSyncItem(
+        entityId: String,
+        entityType: String,
+        action: String,
+        payloadJson: String
+    ) {
+        syncQueueDao.enqueue(
+            SyncQueueEntity(
+                entityId = entityId,
+                entityType = entityType,
+                action = action,
+                payloadJson = payloadJson
+            )
+        )
     }
 
     private fun observeRemoteFamilyChanges() {
@@ -118,6 +147,86 @@ class SyncManager(
                             .filter { it.scope == DataScope.FAMILY.name && it.id !in pendingIds && it.id !in remoteIds }
                             .forEach { localDeleted ->
                                 budgetDao.deleteById(localDeleted.id)
+                            }
+                    }
+                }
+            }
+            launch {
+                runCatching {
+                    remoteDataSource.observeFamilySubscriptions(familyId).collect { remoteSubs ->
+                        val pendingIds = syncQueueDao.getAllPending().map { it.entityId }.toSet()
+                        val remoteIds = remoteSubs.map { it.id }.toSet()
+
+                        remoteSubs
+                            .filter { it.id !in pendingIds }
+                            .forEach { sub ->
+                                subscriptionDao.upsert(SubscriptionEntity.fromDomain(sub))
+                            }
+
+                        subscriptionDao.getAllSnapshot()
+                            .filter { it.scope == DataScope.FAMILY.name && it.id !in pendingIds && it.id !in remoteIds }
+                            .forEach { localDeleted ->
+                                subscriptionDao.deleteById(localDeleted.id)
+                            }
+                    }
+                }
+            }
+            launch {
+                runCatching {
+                    remoteDataSource.observeFamilySavingsGoals(familyId).collect { remoteGoals ->
+                        val pendingIds = syncQueueDao.getAllPending().map { it.entityId }.toSet()
+                        val remoteIds = remoteGoals.map { it.id }.toSet()
+
+                        remoteGoals
+                            .filter { it.id !in pendingIds }
+                            .forEach { goal ->
+                                savingsGoalDao.upsert(SavingsGoalEntity.fromDomain(goal))
+                            }
+
+                        savingsGoalDao.getAllSnapshot()
+                            .filter { it.scope == DataScope.FAMILY.name && it.id !in pendingIds && it.id !in remoteIds }
+                            .forEach { localDeleted ->
+                                savingsGoalDao.deleteById(localDeleted.id)
+                            }
+                    }
+                }
+            }
+            launch {
+                runCatching {
+                    remoteDataSource.observeFamilyLoans(familyId).collect { remoteLoans ->
+                        val pendingIds = syncQueueDao.getAllPending().map { it.entityId }.toSet()
+                        val remoteIds = remoteLoans.map { it.id }.toSet()
+
+                        remoteLoans
+                            .filter { it.id !in pendingIds }
+                            .forEach { loan ->
+                                loanDao.upsert(LoanEntity.fromDomain(loan))
+                            }
+
+                        loanDao.getAllSnapshot()
+                            .filter { it.scope == DataScope.FAMILY.name && it.id !in pendingIds && it.id !in remoteIds }
+                            .forEach { localDeleted ->
+                                loanDao.deleteById(localDeleted.id)
+                            }
+                    }
+                }
+            }
+            launch {
+                runCatching {
+                    remoteDataSource.observeFamilyCategories(familyId).collect { remoteCats ->
+                        val pendingIds = syncQueueDao.getAllPending().map { it.entityId }.toSet()
+                        val remoteIds = remoteCats.map { it.id }.toSet()
+
+                        remoteCats
+                            .filter { it.id !in pendingIds }
+                            .forEach { cat ->
+                                categoryDao.upsert(CategoryEntity.fromDomain(cat))
+                            }
+
+                        categoryDao.getAllSnapshot()
+                            .filter { !it.isDefault && it.id !in pendingIds && it.id !in remoteIds }
+                            .forEach { localDeleted ->
+                                categoryDao.deleteById(localDeleted.id)
                             }
                     }
                 }

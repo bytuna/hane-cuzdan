@@ -3,7 +3,7 @@
 **HaneCüzdan**, kişisel ve aile bütçesini tek yerden yönetmek için geliştirilmiş modern bir Android finans uygulamasıdır.
 
 - **Geliştirici:** ByTuna
-- **Sürüm:** v1.2.0
+- **Sürüm:** v1.2.1
 - **Platform:** Android (Min SDK 26 / Target SDK 35)
 
 ---

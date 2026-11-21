@@ -12,6 +12,9 @@ interface SavingsGoalDao {
     @Query("SELECT * FROM savings_goals ORDER BY createdAt DESC")
     fun observeAll(): Flow<List<SavingsGoalEntity>>
 
+    @Query("SELECT * FROM savings_goals ORDER BY createdAt DESC")
+    suspend fun getAllSnapshot(): List<SavingsGoalEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: SavingsGoalEntity)
 

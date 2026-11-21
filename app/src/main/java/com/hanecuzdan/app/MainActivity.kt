@@ -59,6 +59,8 @@ import com.hanecuzdan.app.ui.screens.SmartInsightsScreen
 import com.hanecuzdan.app.ui.screens.SubscriptionsScreen
 import com.hanecuzdan.app.ui.screens.UpcomingPaymentsScreen
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.util.UUID
 import com.hanecuzdan.app.ui.security.LockScreen
 import com.hanecuzdan.app.ui.theme.HaneCuzdanTheme
@@ -286,10 +288,28 @@ private fun MainScaffold(
                     AppDestination.LOANS -> LoansScreen(
                         loans = state.loans,
                         onAddLoan = { loan ->
-                            scope.launch { container.loanDao.upsert(LoanEntity.fromDomain(loan)) }
+                            scope.launch {
+                                container.loanDao.upsert(LoanEntity.fromDomain(loan))
+                                if (loan.scope == DataScope.FAMILY) {
+                                    container.syncRepository.enqueueSyncItem(
+                                        entityId = loan.id,
+                                        entityType = "LOAN",
+                                        action = "UPSERT",
+                                        payloadJson = Json.encodeToString(loan)
+                                    )
+                                }
+                            }
                         },
                         onDeleteLoan = { id ->
-                            scope.launch { container.loanDao.deleteById(id) }
+                            scope.launch {
+                                container.loanDao.deleteById(id)
+                                container.syncRepository.enqueueSyncItem(
+                                    entityId = id,
+                                    entityType = "LOAN",
+                                    action = "DELETE",
+                                    payloadJson = "{}"
+                                )
+                            }
                         }
                     )
                     AppDestination.SMART_INSIGHTS -> SmartInsightsScreen(
@@ -301,10 +321,28 @@ private fun MainScaffold(
                         subscriptions = subscriptions,
                         currentUserName = drawerUserName,
                         onAddSubscription = { sub ->
-                            scope.launch { container.subscriptionDao.upsert(SubscriptionEntity.fromDomain(sub)) }
+                            scope.launch {
+                                container.subscriptionDao.upsert(SubscriptionEntity.fromDomain(sub))
+                                if (sub.scope == DataScope.FAMILY) {
+                                    container.syncRepository.enqueueSyncItem(
+                                        entityId = sub.id,
+                                        entityType = "SUBSCRIPTION",
+                                        action = "UPSERT",
+                                        payloadJson = Json.encodeToString(sub)
+                                    )
+                                }
+                            }
                         },
                         onDeleteSubscription = { id ->
-                            scope.launch { container.subscriptionDao.deleteById(id) }
+                            scope.launch {
+                                container.subscriptionDao.deleteById(id)
+                                container.syncRepository.enqueueSyncItem(
+                                    entityId = id,
+                                    entityType = "SUBSCRIPTION",
+                                    action = "DELETE",
+                                    payloadJson = "{}"
+                                )
+                            }
                         },
                         onRecordPayment = { sub ->
                             viewModel.saveTransaction(
@@ -327,10 +365,28 @@ private fun MainScaffold(
                     AppDestination.SAVINGS_GOALS -> SavingsGoalsScreen(
                         goals = savingsGoals,
                         onUpsertGoal = { goal ->
-                            scope.launch { container.savingsGoalDao.upsert(SavingsGoalEntity.fromDomain(goal)) }
+                            scope.launch {
+                                container.savingsGoalDao.upsert(SavingsGoalEntity.fromDomain(goal))
+                                if (goal.scope == DataScope.FAMILY) {
+                                    container.syncRepository.enqueueSyncItem(
+                                        entityId = goal.id,
+                                        entityType = "SAVINGS_GOAL",
+                                        action = "UPSERT",
+                                        payloadJson = Json.encodeToString(goal)
+                                    )
+                                }
+                            }
                         },
                         onDeleteGoal = { id ->
-                            scope.launch { container.savingsGoalDao.deleteById(id) }
+                            scope.launch {
+                                container.savingsGoalDao.deleteById(id)
+                                container.syncRepository.enqueueSyncItem(
+                                    entityId = id,
+                                    entityType = "SAVINGS_GOAL",
+                                    action = "DELETE",
+                                    payloadJson = "{}"
+                                )
+                            }
                         }
                     )
                     AppDestination.SCOPE_TRANSACTIONS -> ScopeTransactionsScreen(

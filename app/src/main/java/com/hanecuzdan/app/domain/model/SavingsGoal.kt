@@ -1,6 +1,9 @@
 package com.hanecuzdan.app.domain.model
 
+import kotlinx.serialization.Serializable
+
 /** Tasarruf hedefi / kumbara modeli (Acil Durum, Tatil, Araç vb.). */
+@Serializable
 data class SavingsGoal(
     val id: String,
     val title: String,

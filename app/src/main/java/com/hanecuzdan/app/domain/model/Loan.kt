@@ -1,6 +1,9 @@
 package com.hanecuzdan.app.domain.model
 
+import kotlinx.serialization.Serializable
+
 /** Kredi / Taksitli ödeme domain modeli. */
+@Serializable
 data class Loan(
     val id: String,
     val name: String,

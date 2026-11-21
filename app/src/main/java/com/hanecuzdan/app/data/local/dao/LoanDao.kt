@@ -12,6 +12,9 @@ interface LoanDao {
     @Query("SELECT * FROM loans ORDER BY paymentDay ASC")
     fun observeAll(): Flow<List<LoanEntity>>
 
+    @Query("SELECT * FROM loans ORDER BY paymentDay ASC")
+    suspend fun getAllSnapshot(): List<LoanEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: LoanEntity)
 

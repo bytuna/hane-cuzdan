@@ -38,7 +38,8 @@ class AppContainer(context: Context) {
     )
 
     val categoryRepository: CategoryRepository = CategoryRepositoryImpl(
-        categoryDao = database.categoryDao()
+        categoryDao = database.categoryDao(),
+        syncQueueDao = database.syncQueueDao()
     )
 
     val budgetRepository: BudgetRepository = BudgetRepositoryImpl(
@@ -51,6 +52,10 @@ class AppContainer(context: Context) {
         syncQueueDao = database.syncQueueDao(),
         transactionDao = database.transactionDao(),
         budgetDao = database.budgetDao(),
+        subscriptionDao = database.subscriptionDao(),
+        savingsGoalDao = database.savingsGoalDao(),
+        loanDao = database.loanDao(),
+        categoryDao = database.categoryDao(),
         remoteDataSource = FirestoreFamilyDataSource(),
         familyIdProvider = { securityPreferences.familyId },
         memberIdProvider = { securityPreferences.memberId },
